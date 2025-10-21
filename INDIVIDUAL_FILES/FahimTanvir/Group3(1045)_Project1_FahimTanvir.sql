@@ -63,3 +63,111 @@ ORDER BY
     ReturnData.AverageOrderValue DESC; 
 
     /**OUTPUT AND MAIN CULPRIT:Shu Ito is our main guy, he is 2nd highest earner**/
+
+
+
+
+
+
+
+
+
+--Mystery 2
+/*A customer is presumed to have shoplifted a lot of our merch. We know they frequented our 
+store around the first week of october 2012 didn't spend that much overall. They weren't contacted 
+a few months later from March to May due to them unsubscribing from our newsleter. 
+They attempted to cover their trail by using legitamate purchases after May.*/
+
+--Step 1
+/*We gotta least spending customer*/
+SELECT TOP 10 CustomerID, SUM(TotalDue) AS TotalSpent 
+FROM Sales.SalesOrderHeader
+WHERE OrderDate >= '2012-10-01' AND OrderDate <= '2012-10-07'
+GROUP BY CustomerID
+ORDER BY TotalSpent ASC;
+
+/**OUTPUT: Our top 10 least spenders are
+15388, 20598, 20716, 20859, 26436, 26439, 26442, 14239**/
+ 
+
+--Step 2
+/*Find customer that was contacted from May to March.*/
+/* Find customers whose contact records were modified between March 1st and May 31st
+WE MUST FIND SOMEONE WHO ISN'T PRESENT ON THE LIST*/
+SELECT DISTINCT
+    C.CustomerID,
+    P.FirstName + ' ' + P.LastName AS CustomerName
+FROM
+    Sales.Customer AS C
+JOIN
+    Person.Person AS P ON C.PersonID = P.BusinessEntityID
+WHERE
+    C.PersonID IS NOT NULL
+    AND (
+        EXISTS (
+            SELECT 1
+            FROM Person.EmailAddress AS E
+            WHERE E.BusinessEntityID = P.BusinessEntityID
+            AND E.ModifiedDate >= '2012-03-01' AND E.ModifiedDate <= '2012-05-31'
+        )
+        OR
+        EXISTS (
+            SELECT 1
+            FROM Person.PersonPhone AS PP
+            WHERE PP.BusinessEntityID = P.BusinessEntityID
+            AND PP.ModifiedDate >= '2012-03-01' AND PP.ModifiedDate <= '2012-05-31'
+        )
+   )
+ORDER BY CustomerID;
+/**OUTPUT: A lot of customers who responded to their emails**/
+
+
+
+--Step 3
+/*Find customer who isn't present on the list from step 2*/
+SELECT DISTINCT
+    C.CustomerID,
+    P.FirstName + ' ' + P.LastName AS CustomerName
+FROM
+    Sales.Customer AS C
+JOIN
+    Person.Person AS P ON C.PersonID = P.BusinessEntityID
+WHERE
+    C.PersonID IS NOT NULL 
+    AND NOT EXISTS (
+        SELECT 1
+        FROM Person.EmailAddress AS E
+        WHERE E.BusinessEntityID = P.BusinessEntityID
+        AND E.ModifiedDate >= '2012-03-01' AND E.ModifiedDate <= '2012-05-31'
+    )
+    AND NOT EXISTS (
+        
+        SELECT 1
+        FROM Person.PersonPhone AS PP
+        WHERE PP.BusinessEntityID = P.BusinessEntityID
+        AND PP.ModifiedDate >= '2012-03-01' AND PP.ModifiedDate <= '2012-05-31'
+    )
+ORDER BY CustomerID;
+/**OUTPUT: Customers that didn't respond in April, March or May 2012. 15388 
+Or Victoria Smith is on that list!**/
+
+--Step 4
+/*Customers who bought something past May */
+SELECT DISTINCT
+    C.CustomerID,
+    P.FirstName + ' ' + P.LastName AS CustomerName
+FROM
+    Sales.Customer AS C
+JOIN
+    Person.Person AS P ON C.PersonID = P.BusinessEntityID
+WHERE
+    C.PersonID IS NOT NULL 
+    AND C.CustomerID IN (
+        SELECT DISTINCT CustomerID
+        FROM Sales.SalesOrderHeader
+        WHERE OrderDate > '2012-05-31'
+    )
+ORDER BY
+    CustomerID;
+ /**OUTPUT AND MAIN CULPRIT:Victoria Smith did infact other something around a date after the month of 
+ May. This fills our checkboxes**/
