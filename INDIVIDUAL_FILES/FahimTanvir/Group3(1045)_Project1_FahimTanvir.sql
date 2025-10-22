@@ -260,3 +260,59 @@ WHERE
 
     /*Main output:Lynn Tsoflias ships in Australian territories or the cheapest shipping area*/
 
+
+
+
+--Mystery 4
+/*An employee stole diamonds and  placed them within purchases. This was discovered in  the last week
+0f December 2013 but could've happened earlier.It is a low selling item during that month, 
+most likely for an accomplice to buy and  split the cost with the suspect. Who is that employee?
+Who is that customer?*/
+
+-- Step 1: 
+/**Identify the lowest selling product by volume in the  month of december**/
+SELECT TOP 1 sod.ProductID,  p.Name AS ConcealmentProductName,
+ SUM(sod.OrderQty) AS TotalQuantitySold
+FROM
+Sales.SalesOrderDetail AS sod 
+JOIN
+Sales.SalesOrderHeader AS soh ON sod.SalesOrderID = soh.SalesOrderID
+JOIN
+ Production.Product AS p ON sod.ProductID = p.ProductID
+WHERE
+    soh.OrderDate >= '2013-12-01'
+    AND soh.OrderDate <= '2013-12-31'
+GROUP BY sod.ProductID, p.Name
+ORDER BY TotalQuantitySold ASC;
+/*Output is Road-650 Black, 52 with ProductID 770 and sold only once, helping us narrow thingds down*/
+
+--Step 2
+/*Find employee who sold it**/
+SELECT TOP 1
+    P.FirstName + ' ' + P.LastName AS SalespersonName,
+    CAST(SOH.OrderDate AS DATE) AS SaleDate,
+    sales.SalesOrderID
+FROM Sales.SalesOrderDetail AS sales
+JOIN  Sales.SalesOrderHeader AS SOH ON sales.SalesOrderID = SOH.SalesOrderID
+JOIN Person.Person AS P ON SOH.SalesPersonID = P.BusinessEntityID
+WHERE sales.ProductID = 770
+ORDER BY SOH.OrderDate DESC;
+/*OUTPUT AND MAIN CULPRIT: Rachel Valdes sold the item in 2013-12-31*/
+
+
+--Step 3
+/*Find customer associated with the sale*/
+SELECT TOP 1
+    P_Cust.FirstName + ' ' + P_Cust.LastName AS CustomerName,
+    SOH.CustomerID,
+    CAST(SOH.OrderDate AS DATE) AS SaleDate,
+    sales.ProductID
+FROM Sales.SalesOrderDetail AS sales
+JOIN Sales.SalesOrderHeader AS SOH ON sales.SalesOrderID = SOH.SalesOrderID
+JOIN Sales.Customer AS C ON SOH.CustomerID = C.CustomerID
+JOIN Person.Person AS P_Cust ON C.PersonID = P_Cust.BusinessEntityID
+WHERE sales.ProductID = 770
+ORDER BY SOH.OrderDate DESC;
+
+/*OUTPUT AND ACCOMPLICE: David Brink is our main accomplice as he bought the item on the same day*/
+
