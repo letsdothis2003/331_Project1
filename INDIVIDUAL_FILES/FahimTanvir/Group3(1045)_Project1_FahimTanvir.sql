@@ -171,3 +171,92 @@ ORDER BY
     CustomerID;
  /**OUTPUT AND MAIN CULPRIT:Victoria Smith did infact other something around a date after the month of 
  May. This fills our checkboxes**/
+
+
+
+
+--Mystery 3
+/*A employee is sabotaging us by causing delays and losing profits by consistently smuggling
+products to shipping facilities not authorized by us and is choosing cheap shipping
+territories but  using expensive shipping methods.
+They also have many high value sales despite this. How can we find this person?.*/
+
+--Step 1
+/*Find the territory with lowest shipping cost*/
+
+SELECT TOP 10 st.Name AS TerritoryName,
+AVG(soh.Freight) AS AvgFreightCost
+FROM
+    Sales.SalesOrderHeader AS soh
+JOIN
+    Sales.SalesTerritory AS st ON soh.TerritoryID = st.TerritoryID
+GROUP BY
+    st.Name
+ORDER BY
+    AvgFreightCost ASC;
+ /*OUTPUT: Australia, Germany, UK, France, NorthWest
+ Southwest, CanADA, Southeast, Northeast, Central*/
+
+
+--Step 2
+/*Find seller who has most number of orders using  most pricey shipping methods.*/
+WITH ExpensiveShippers AS (
+    SELECT TOP 5
+        ShipMethodID
+    FROM
+        Purchasing.ShipMethod
+    ORDER BY
+        ShipBase DESC
+)
+SELECT
+    p.FirstName + ' ' + p.LastName AS EmployeeName,
+    COUNT(soh.SalesOrderID) AS OrdersWithExpensiveShipping,
+    AVG(soh.SubTotal) AS AvgSubtotalForExpensiveOrders
+FROM
+    Sales.SalesOrderHeader AS soh
+JOIN
+    Person.Person AS p ON soh.SalesPersonID = p.BusinessEntityID
+WHERE
+    soh.ShipMethodID IN (SELECT ShipMethodID FROM ExpensiveShippers)
+    AND soh.SalesPersonID IS NOT NULL
+GROUP BY
+    p.FirstName, p.LastName
+ORDER BY
+    OrdersWithExpensiveShipping DESC;
+
+/*Output: Jillian Carson, Michael Blythe, Tsvi Reiter, Linda Mitchell, Jae Pak
+Jose Saraiva, Shu Ito(theif from mystery 1), Garret Vargas, David Campbell, Ranjit Varkey
+Tete Mensa, Rachel Valdez, Lynn Tsoflias, Pamela Ansm, Stephen Jiang, Amy Alberts, Syed Abbas*/
+
+
+--Step 3
+/*Find who has the highest average ratio of Shipping Cost (Freight) to SubTotal,
+indicating they are incurring high costs on low-value sales. */
+SELECT TOP 1
+    p.FirstName + ' ' + p.LastName AS SuspectName,
+    AVG(soh.Freight / soh.SubTotal) AS AvgCostToValueRatio
+FROM
+    Sales.SalesOrderHeader AS soh
+JOIN
+    Person.Person AS p ON soh.SalesPersonID = p.BusinessEntityID
+GROUP BY p.FirstName, p.LastName
+ORDER BY AvgCostToValueRatio DESC;
+/*Output: Lynn Tsoflias*/
+
+
+--Step 4
+/*Verify our suspect with location they ship in */
+SELECT
+    p.FirstName + ' ' + p.LastName AS SalespersonName,
+    st.Name AS TerritoryName
+FROM
+    Person.Person AS p
+JOIN
+    Sales.SalesPerson AS sp ON p.BusinessEntityID = sp.BusinessEntityID
+JOIN
+    Sales.SalesTerritory AS st ON sp.TerritoryID = st.TerritoryID
+WHERE
+    p.FirstName = 'Lynn' AND p.LastName = 'Tsoflias';
+
+    /*Main output:Lynn Tsoflias ships in Australian territories or the cheapest shipping area*/
+
