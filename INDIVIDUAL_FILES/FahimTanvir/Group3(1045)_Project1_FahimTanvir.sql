@@ -375,7 +375,7 @@ JOIN Sales.SalesPerson AS SP ON LEC.BusinessEntityID = SP.BusinessEntityID
 JOIN Person.Person AS P ON LEC.BusinessEntityID = P.BusinessEntityID
 ORDER BY  SP.SalesYTD ASC, LEC.LatestDate DESC;
 
-/*OUTPUT AND MAIN VICTI
+/*OUTPUT AND MAIN VICTIM is SYED aBBAS*/
 
 
 
