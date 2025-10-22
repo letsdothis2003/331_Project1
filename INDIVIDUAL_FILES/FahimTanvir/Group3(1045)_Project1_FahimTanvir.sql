@@ -325,7 +325,7 @@ ORDER BY SOH.OrderDate DESC;
 --Mystery 5
 /*An employee was victim to a phishing email. It is known that they clicked on the email on the year 2013,
 when the system has updated their email, and the email was promising a promotion, which gets us to believe
-it was low earning. Who is this?*/
+it was low earning. 6 accounts were compromised including the original person who was sent the phising email. Who is this?*/
 
 -- Step 1: 
 /** Find the date with the highest total number of contact record changes**/
@@ -342,16 +342,19 @@ ORDER BY
 
 -- Step 2: 
 /*Find the Top 10 Employees with the most recent contact modification dates in 2013.*/
+-- Step 2: 
+/*Find the Top 10 Employees with the most recent contact modification dates in 2013.*/
 WITH UPDATED AS (
     SELECT BusinessEntityID, ModifiedDate FROM Person.EmailAddress WHERE YEAR(ModifiedDate) = 2013
     UNION ALL
     SELECT BusinessEntityID, ModifiedDate FROM Person.PersonPhone WHERE YEAR(ModifiedDate) = 2013
 )
-SELECT TOP 10 P.FirstName + ' ' + P.LastName as FullName, MAX(UPDATED.ModifiedDate) AS Datelastmodified
+SELECT TOP 6 P.FirstName + ' ' + P.LastName as FullName, MAX(UPDATED.ModifiedDate) AS Datelastmodified
 FROM UPDATED JOIN Person.Person AS P ON UPDATED.BusinessEntityID = P.BusinessEntityID
 JOIN HumanResources.Employee AS HRE ON P.BusinessEntityID = HRE.BusinessEntityID
 GROUP BY P.BusinessEntityID, P.FirstName, P.LastName
 ORDER BY MAX(UPDATED.ModifiedDate) DESC;
+
 /*OUTPUT: Taylor Maxwell, Barry Johnson, Jossef Goldberg, Rachel Valdez
 Lynn Tsoflias, Syed Abbas*/
 
