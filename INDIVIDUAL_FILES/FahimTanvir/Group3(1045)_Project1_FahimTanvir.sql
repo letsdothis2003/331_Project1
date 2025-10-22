@@ -316,3 +316,70 @@ ORDER BY SOH.OrderDate DESC;
 
 /*OUTPUT AND ACCOMPLICE: David Brink is our main accomplice as he bought the item on the same day*/
 
+
+
+
+
+
+
+--Mystery 5
+/*An employee was victim to a phishing email. It is known that they clicked on the email on the year 2013,
+when the system has updated their email, and the email was promising a promotion, which gets us to believe
+it was low earning. Who is this?*/
+
+-- Step 1: 
+/** Find the date with the highest total number of contact record changes**/
+SELECT TOP 1
+    CAST(ModifiedDate AS DATE) AS BusiestUpdateDay,
+    COUNT(BusinessEntityID) AS TotalContactUpdates
+FROM
+    Person.EmailAddress
+GROUP BY
+    CAST(ModifiedDate AS DATE)
+ORDER BY
+    TotalContactUpdates DESC;
+    /*Output: 2013-07-31*/
+
+-- Step 2: 
+/*Find the Top 10 Employees with the most recent contact modification dates in 2013.*/
+WITH UPDATED AS (
+    SELECT BusinessEntityID, ModifiedDate FROM Person.EmailAddress WHERE YEAR(ModifiedDate) = 2013
+    UNION ALL
+    SELECT BusinessEntityID, ModifiedDate FROM Person.PersonPhone WHERE YEAR(ModifiedDate) = 2013
+)
+SELECT TOP 10 P.FirstName + ' ' + P.LastName as FullName, MAX(UPDATED.ModifiedDate) AS Datelastmodified
+FROM UPDATED JOIN Person.Person AS P ON UPDATED.BusinessEntityID = P.BusinessEntityID
+JOIN HumanResources.Employee AS HRE ON P.BusinessEntityID = HRE.BusinessEntityID
+GROUP BY P.BusinessEntityID, P.FirstName, P.LastName
+ORDER BY MAX(UPDATED.ModifiedDate) DESC;
+/*OUTPUT: Taylor Maxwell, Barry Johnson, Jossef Goldberg, Rachel Valdez
+Lynn Tsoflias, Syed Abbas*/
+
+
+-- Step 3
+/*Find lowest ranking Employee who had a recent contact modification from step 2.*/
+WITH LatestEmployeeContact AS (
+    SELECT T.BusinessEntityID, MAX(T.ModifiedDate) AS LatestDate FROM (
+        SELECT BusinessEntityID, ModifiedDate FROM Person.EmailAddress
+        UNION ALL
+        SELECT BusinessEntityID, ModifiedDate FROM Person.PersonPhone
+    ) AS T GROUP BY T.BusinessEntityID
+)
+SELECT TOP 1 
+    P.FirstName + ' ' + P.LastName AS Suspect, SP.SalesYTD, LEC.LatestDate
+FROM LatestEmployeeContact AS LEC 
+JOIN Sales.SalesPerson AS SP ON LEC.BusinessEntityID = SP.BusinessEntityID
+JOIN Person.Person AS P ON LEC.BusinessEntityID = P.BusinessEntityID
+ORDER BY  SP.SalesYTD ASC, LEC.LatestDate DESC;
+
+/*OUTPUT AND MAIN VICTI
+
+
+
+
+
+
+
+
+
+
