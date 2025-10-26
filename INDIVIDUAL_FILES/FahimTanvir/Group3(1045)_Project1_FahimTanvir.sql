@@ -1,388 +1,509 @@
 -- Fahim Tanvir
---Group_1045_4
--- CSCI-331
--- PROJECT 1
-/**intro: These are 7 queries we made to root out problems(a lot go whcih is related to theft or other nefarious schemes) one might find in a company or manager role.
-Inspired by SQL NOIR**/
-
-USE AdventureWorks2022;--Its new, so I decided me and Yousuf atleast can get accostumed to it.
+---CSCI 311 
+-- 10:45 AM Group 4 Project 1
+-- Mystery Prompts made by Fahim Tanvir
+-- Solutions done by Yousuf Ahmed
+/*INTRO: We were inspired by beginner and intermediate cases from SQL noir to create 7 mysteries using our knowledge
+from chapters 1-6 from our textbook and previous assignmentes*/
+USE AdventureWorks2022; -- we need this to run within the database
 GO
-  
---MYSTERY 1
 
-/*One of the employees committed commision fraud. It is proposed that they produced
-a decent ammount of commissions and is one of the top 3 earning sales employees who made
-a record sale.*/
+--MYSTERY 1   
+/* On November 30, 2013, an employee was working on in person offline orders at the store. Feeling tired during a long day, they decided to take a short nap
+During his nap, he noticed his watch went missing. Unfortunately security was unable to capture the thief since they were gone by the time the employee noticed.
+The employee remembers that the last order he made was actually the highest value order that day. It is believed that the customer of this order stole the watch 
+Find the employee to punish them for sleeping on the job, and the customer alleged to be the thief.
+ */
 
--- Step 1:
-/*Find all salespeople, and group from the highest sales of ALL sales orders. */
-SELECT  p.FirstName + ' ' + p.LastName AS SalespersonName, 
-    COUNT(soh.SalesOrderID) AS TotalOrdersCount
-FROM   Person.Person AS p
-JOIN Sales.SalesOrderHeader AS soh ON p.BusinessEntityID = soh.SalesPersonID 
-WHERE  soh.SalesPersonID IS NOT NULL
-GROUP BY p.FirstName, p.LastName
-ORDER BY TotalOrdersCount DESC;
-
-/**OUTPUT: The top 3 for this one is Jillian Carson, Michael Blythe and Tsvi Reiter. 
-This is a false hering as we should be looking for highest earners, not busiest person. 
-We can make sure by checking how much they got through the actual profit they make**/
-
-
--- Step 2: 
-/*Calculates the highest single sale value for every salesperson. This shortens our list of suspects*/
-SELECT
+	-- Step 1: We gotta find the highest value offline order on November 30, 2013.
+SELECT TOP 1
+    soh.SalesOrderID,
     soh.SalesPersonID,
+    soh.CustomerID,
+    soh.TotalDue
+FROM Sales.SalesOrderHeader soh
+WHERE soh.OrderDate = '2013-11-30'
+  AND soh.OnlineOrderFlag = 0
+ORDER BY soh.TotalDue DESC;
+
+
+/*OUTPUT:
+ * I will note the SalesPersonID and CustomerID for this order
+ */
+
+	-- Step 2: Use the SalesPersonID to find the name of the employee
+SELECT 
+    p.BusinessEntityID AS SalesPersonID,
+    p.FirstName,  p.LastName
+FROM sales.SalesPerson sp  
+JOIN Person.Person p ON p.BusinessEntityID = sp.BusinessEntityID 
+WHERE sp.BusinessEntityID = 281
+/*OUTPUT:
+ * Shu Ito is sleeping on the job.
+ */
+
+	-- Step 3: Use the CustomerID to find the name of the alleged thief
+SELECT 
+    p.BusinessEntityID AS SalesPersonID,
+    p.FirstName,  p.LastName
+FROM sales.Customer c   
+JOIN Person.Person p ON p.BusinessEntityID = c.PersonID   
+WHERE c.CustomerID  = 29641
+/*OUTPUT:
+ * Raul Casts might have stolen the watch
+ */
+
+	
+	
+-- MYSTERY 2   
+	
+/* You have recieved a fraud notification from ColonialVoice telling you 
+that a stolen card was used to purchase a total of $6692.55 in goods over 2 orders in Sunbury.
+Find the customer responsible for this fraud
+ */
+	
+	-- Step 1: Find all customers that have paid a total of $6692.55.
+SELECT
+soh.CustomerID,
+	ROUND(SUM(soh.TotalDue), 2) AS TotalSpent,
+	count(soh.CustomerID)
+FROM
+	Sales.SalesOrderHeader soh
+GROUP BY
+	soh.CustomerID
+HAVING
+	ROUND(SUM(soh.TotalDue), 2) = 6692.55;
+/*OUTPUT: 
+ * I see that there are 31 customers that have a total spendage of $6692.55
+ * need to do more digging
+ */
+	
+	-- Step 2: Filter those customers for ColonialVoice cards, with a billing address in Sunbury.
+WITH step1 AS(
+SELECT
+soh.CustomerID
+FROM
+	Sales.SalesOrderHeader soh
+GROUP BY
+	soh.CustomerID
+HAVING
+	ROUND(SUM(soh.TotalDue), 2) = 6692.55
+	)	
+SELECT
+	soh.CustomerID,
+	soh.SalesOrderID,
+	soh.BillToAddressID,
+	a.City
+FROM
+	sales.SalesOrderHeader soh
+JOIN step1 s1 ON
+	s1.CustomerID = soh.CustomerID
+JOIN sales.CreditCard cc ON
+	cc.CreditCardID = soh.CreditCardID
+JOIN Person.Address a ON
+	soh.BillToAddressID = a.AddressID
+WHERE
+	cc.CardType = N'ColonialVoice'
+	AND a.city = N'Sunbury';
+/*OUTPUT: 
+ * Now I have filtered out the customer who has paid with a ColonialVoice card in Sunbury.
+ * All I need to do now is pull their information
+ */
+	
+	-- Step 3: Pull Customer's Name
+SELECT
+	p.FirstName,
+	p.LastName
+FROM
+	Person.Person p
+WHERE
+	p.BusinessEntityID = 19965;
+
+
+	
+--   MYSTERY 3  	
+/* While reading the news, you see that a person from Houston was recently arrested for trying to smuggle fake goods in 2013.
+They hid them into Large Long-Sleeve Logo Jerseys from your company. After looking into it, they also have been caught doing the same thing in 2012. 
+You see that he was previously caught smuggling with Medium Full-Finger Gloves. You recall your employee Jillian Carson was arrested around the same time in 2012 for working under them.
+Unfortunately their identity is kept secret by the news and you don't remember their name from the last time you encountered them.
+Find out who this customer is, and which employee sold him the Large Long Sleeve Logo Jerseys in 2013.
+ */
+	
+
+	-- Step 1: Find the Product IDs for the two items, and save them for later queries
+SELECT
+	ProductID,
+	Name
+FROM
+	Production.Product
+WHERE
+	Name LIKE N'%Long-Sleeve Logo Jersey%'
+	OR Name LIKE N'%Full-Finger Gloves%';
+/*OUTPUT: 
+ * This returns seven items, all sizes of Full-Finger Gloves and Long-Sleeve Logo Jerseys.
+ * Note down both Product ID's of the items that are relevant to the mystery
+ * 862 : Full-Finger Gloves, M
+ * 715 : Long-Sleeve Logo Jersey, L
+ */
+
+	-- Step 2: Find out Jillian Carson's ID and customers from Houston that she has sold to
+
+WITH accomplice2012 AS (
+SELECT
+	p.BusinessEntityID
+FROM
+	Person.Person p
+WHERE
+	p.FirstName = N'Jillian'
+	AND p.LastName = N'Carson')
+SELECT DISTINCT
+	soh.CustomerID,
+	p.FirstName,
+	p.LastName,
+	soh.SalesPersonID
+FROM
+	Sales.SalesOrderHeader soh
+JOIN accomplice2012 a2012 ON
+	a2012.BusinessEntityID = soh.SalesPersonID
+JOIN Sales.Customer c 
+    ON
+	soh.CustomerID = c.CustomerID
+JOIN Person.Person p 
+    ON
+	c.PersonID = p.BusinessEntityID
+JOIN person.Address a ON
+	soh.ShipToAddressID = a.AddressID
+WHERE
+	a.City = N'Houston';
+/*OUTPUT: 
+ * This query gives us three customers within Memphis who have worked with of Jillian Carson. It also provides Carson's ID which makes filtering her orders easier.
+ * John Arthur, Michael Blythe, Sunil Uppal. I need to look through these customers and see which one has ordered Full-Finger Gloves, M in 2012.
+ */
+
+ 	-- Step 3: Figure out which customer has bought Full-Finger Gloves, M in 2012 from Jillian Carson
+SELECT
+	soh.CustomerID,
+	p.FirstName ,
+	p.LastName ,
+	soh.OrderDate,
+	sod.OrderQty
+FROM
+	Sales.SalesOrderHeader soh
+JOIN sales.SalesOrderDetail sod ON
+	soh.SalesOrderID = sod.SalesOrderID
+JOIN Sales.Customer c 
+    ON
+	soh.CustomerID = c.CustomerID
+JOIN Person.Person p 
+    ON
+	c.PersonID = p.BusinessEntityID
+WHERE
+	soh.SalesPersonID = 277
+	AND YEAR(soh.OrderDate) = 2012
+	AND soh.CustomerID IN (29523, 29570, 30095)
+	AND sod.ProductID = 862;
+/*OUTPUT: 
+ * I found the criminal: John Arthur 
+ * Maybe I should ban this guy from ordering more products
+ */
+
+	-- Step 4: find his orders with Long-Sleeve Logo Jersey, L and figure out who sold it to him.
+SELECT
+	soh.CustomerID,
+	soh.OrderDate,
+	soh.SalesPersonID,
+	p.FirstName ,
+	p.LastName,
+	sod.OrderQty
+FROM
+	Sales.SalesOrderHeader soh
+JOIN sales.SalesOrderDetail sod ON
+	soh.SalesOrderID = sod.SalesOrderID
+JOIN Sales.SalesPerson sp  
+    ON
+	soh.SalesPersonID = sp.BusinessEntityID
+JOIN Person.Person p 
+    ON
+	sp.BusinessEntityID = p.BusinessEntityID
+WHERE
+	YEAR(soh.OrderDate) = 2013
+	AND soh.CustomerID = 29523
+	AND sod.ProductID = 715;
+/*OUTPUT: 
+ * I found the accomplice: Michael Blythe 
+ * Maybe I should fire this guy
+ */
+	
+	
+	
+--   MYSTERY 4  
+/* A Florida Man was found dead by a defective product. This product was not sold much in bulk.
+ The purchase was in May 2012 and happened to be the one of the top 5 lowest selling items of that year.
+ */
+
+	-- Step 1: Find the top 5 worst selling items of 2012
+SELECT
+	TOP 5
+    sod.ProductID,
+	p.Name AS ProductName,
+	SUM(sod.OrderQty) AS TotalQuantitySold
+FROM
+	Sales.SalesOrderDetail sod
+JOIN Sales.SalesOrderHeader soh 
+    ON
+	sod.SalesOrderID = soh.SalesOrderID
+JOIN Production.Product p 
+    ON
+	sod.ProductID = p.ProductID
+WHERE
+	YEAR(soh.OrderDate) = 2012
+GROUP BY
+	sod.ProductID,
+	p.Name
+ORDER BY
+	TotalQuantitySold ASC;
+/*OUTPUT:
+ * 4 out of 5 of these items are bike frames. 
+ * I can exclude the socks because who is gonna die beacasue of a pair of socks. If they are they must be very unlucky.
+ */
+
+	--Step 2: Find out which of these unpopular items were ordered by themselves in May 2012. 
+SELECT
+	soh.SalesOrderID,
+	soh.CustomerID,
+	soh.OrderDate,
+	sod.ProductID,
+	p.Name AS ProductName,
+	a.City
+FROM
+	Sales.SalesOrderDetail sod
+JOIN Sales.SalesOrderHeader soh 
+    ON
+	sod.SalesOrderID = soh.SalesOrderID
+JOIN Production.Product p 
+    ON
+	sod.ProductID = p.ProductID
+JOIN person.Address a ON
+	a.AddressID = soh.ShipToAddressID 
+WHERE
+	sod.ProductID IN (744, 733, 719, 839)
+	AND soh.OrderDate BETWEEN '2012-05-01' AND '2012-05-31'
+	AND sod.OrderQty = 1;
+/*OUTPUT:
+ * There are two customers who have ordered this item, and one specifically from Florida.
+ * This matches our description of the Florida Man. 
+ */
+	
+	-- Step 3: Find out the Florida Man's name
+SELECT p.FirstName , p.LastName 
+FROM sales.Customer c 
+JOIN Person.Person p ON p.BusinessEntityID = c.PersonID 
+WHERE c.CustomerID = 29704
+/*OUTPUT:
+ * The Victim was Shawn Demicell. RIP
+ */
+
+	
+--   MYSTERY 5   
+
+/*The London police have contacted you to find the owner of a stolen bike. They have included the following information about the bike:
+Silver Women's Mountain Bike, size of 46 CM. Worn out marker shows the letters "ca Sa"
+Find the customer's first and last name, alongside their email.
+ */
+
+	-- Step 1: Find the item number of the bike using the police's description
+SELECT
+	p.ProductID,
+	p.Name
+FROM
+	Production.Product p
+WHERE
+	p.Color = N'Silver'
+	AND p.Size = N'46'
+	AND p.Style = N'W';
+/*OUTPUT: 
+ * There are two results with the following criteria. 
+ * One is a full bike while the other is a frame. 
+ * It is possible the customer has purchased the frame on it's own, so I have to note both ProductID's
+ */
+	
+	-- Step 2: Find out who has ordered these products from London
+SELECT
+	soh.SalesOrderID,
+	sod.ProductID,
+	soh.CustomerID
+FROM
+	sales.SalesOrderDetail sod
+JOIN sales.SalesOrderHeader soh ON
+	soh.SalesOrderID = sod.SalesOrderID
+JOIN person.Address a ON
+	soh.ShipToAddressID = a.AddressID
+WHERE
+	(sod.ProductID = 906
+		OR sod.ProductID = 983)
+	AND a.City = N'London';
+/*OUTPUT: 
+ * There are six orders with the two products. 
+ * Five people have ordered the full bike, and another person ordered a frame. 
+ * I will use the CustomerID to pull the first and last names of the people who placed these orders
+ */
+	
+	-- Step 3: Find out the names of the customers
+WITH step2 AS(
+SELECT soh.CustomerID 
+FROM sales.SalesOrderDetail sod
+JOIN sales.SalesOrderHeader soh ON
+	soh.SalesOrderID = sod.SalesOrderID
+JOIN person.Address a ON
+	soh.ShipToAddressID = a.AddressID
+WHERE(sod.ProductID = 906
+	OR sod.ProductID = 983)
+AND a.City = N'London'
+)
+SELECT
+	p.FirstName,
+	p.LastName ,
+	c.CustomerID,
+	p.BusinessEntityID
+FROM
+	Sales.Customer c
+JOIN step2 lc ON
+	c.CustomerID = lc.CustomerID
+JOIN Person.Person p ON
+	p.BusinessEntityID = c.PersonID
+ORDER BY
+	c.CustomerID;
+/*OUTPUT: 
+ * I see one name that sticks out: "Veronica Sai", which matches the partial "ca Sa" marking on the bike.
+ * Noting the BusinessEntityID which can be used to retrieve her email.
+ */
+	
+-- Step 4: Find the contact email
+SELECT
+	ea.EmailAddress
+FROM
+	Person.EmailAddress ea
+WHERE
+	ea.BusinessEntityID = 18975;
+
+	/*output:veronica6@adventure-works.com*/
+
+
+	--Mystery 6
+/*A customer has filed a complaint about receiving a defective helmet. The helmet was purchased in July 2013 recently and
+was part of a batch known for quality issues. The product is described as a Red Sport-100 Helmet.
+Find the customer’s name and the city it was shipped to.
+ */
+
+    -- Step 1: Identify the product ID based on the description
+SELECT
+    p.ProductID,
+    p.Name
+FROM
+    Production.Product p
+WHERE
+    p.Color = N'Red'
+    AND p.Name = N'Sport-100 Helmet, Red';
+/*OUTPUT:
+ * Our ID for the red hat is 707
+ */
+
+    -- Step 2: Find orders for this product in July 2013
+SELECT
+    soh.SalesOrderID,
+    soh.CustomerID,
+    soh.OrderDate,
+    a.City,
+    sod.ProductID
+FROM
+    Sales.SalesOrderDetail sod
+JOIN Sales.SalesOrderHeader soh ON
+    soh.SalesOrderID = sod.SalesOrderID
+JOIN Person.Address a ON
+    soh.ShipToAddressID = a.AddressID
+WHERE
+    sod.ProductID = 707
+    AND soh.OrderDate BETWEEN '2013-07-01' AND '2013-07-31'
+ORDER BY soh.OrderDate DESC;
+/*OUTPUT:
+ * This returns a few orders from July 2013 in recent to least recent. Looks like irving
+ is our target location with customer id of 29637 and sales order id of 53616
+ */
+
+    -- Step 3: Get the customer’s name
+SELECT
     p.FirstName,
     p.LastName,
-
-MAX(soh.SubTotal) AS HighestSaleValue
-FROM Sales.SalesOrderHeader AS soh
-JOIN  Person.Person AS p ON soh.SalesPersonID = p.BusinessEntityID 
-WHERE soh.SalesPersonID IS NOT NULL
-GROUP BY soh.SalesPersonID, p.FirstName, p.LastName
-ORDER BY HighestSaleValue DESC;
-/**OUTPUT: The top 3 for this one is Shu Ito, Jae Pak and Ranjit Varkey. 
-We can make even more sure by seeing how much they made overall**/
-
-
--- Step 3 
-/*Finds the salesperson with the highest average sale value*/
-SELECT 
-    p.FirstName + ' ' + p.LastName AS SalesPersonName,  ReturnData.AverageOrderValue
+    c.CustomerID
 FROM
-    Person.Person AS p
-JOIN (
-    SELECT SalesPersonID,
-    AVG(SubTotal) AS AverageOrderValue
-    FROM Sales.SalesOrderHeader
-    WHERE SalesPersonID IS NOT NULL
-    GROUP BY SalesPersonID
-) AS ReturnData ON p.BusinessEntityID = ReturnData.SalesPersonID
-ORDER BY
-    ReturnData.AverageOrderValue DESC; 
-
-    /**OUTPUT AND MAIN CULPRIT:Shu Ito is our main guy, he is 2nd highest earner**/
-
-
-
-
-
-
-
-
-
---Mystery 2
-/*A customer is presumed to have shoplifted a lot of our merch. We know they frequented our 
-store around the first week of october 2012 didn't spend that much overall. They weren't contacted 
-a few months later from March to May due to them unsubscribing from our newsleter. 
-They attempted to cover their trail by using legitamate purchases after May.*/
-
---Step 1
-/*We gotta least spending customer*/
-SELECT TOP 10 CustomerID, SUM(TotalDue) AS TotalSpent 
-FROM Sales.SalesOrderHeader
-WHERE OrderDate >= '2012-10-01' AND OrderDate <= '2012-10-07'
-GROUP BY CustomerID
-ORDER BY TotalSpent ASC;
-
-/**OUTPUT: Our top 10 least spenders are
-15388, 20598, 20716, 20859, 26436, 26439, 26442, 14239**/
- 
-
---Step 2
-/*Find customer that was contacted from May to March.*/
-/* Find customers whose contact records were modified between March 1st and May 31st
-WE MUST FIND SOMEONE WHO ISN'T PRESENT ON THE LIST*/
-SELECT DISTINCT
-    C.CustomerID,
-    P.FirstName + ' ' + P.LastName AS CustomerName
-FROM
-    Sales.Customer AS C
-JOIN
-    Person.Person AS P ON C.PersonID = P.BusinessEntityID
+    Sales.Customer c
+JOIN Person.Person p ON
+    p.BusinessEntityID = c.PersonID
 WHERE
-    C.PersonID IS NOT NULL
-    AND (
-        EXISTS (
-            SELECT 1
-            FROM Person.EmailAddress AS E
-            WHERE E.BusinessEntityID = P.BusinessEntityID
-            AND E.ModifiedDate >= '2012-03-01' AND E.ModifiedDate <= '2012-05-31'
-        )
-        OR
-        EXISTS (
-            SELECT 1
-            FROM Person.PersonPhone AS PP
-            WHERE PP.BusinessEntityID = P.BusinessEntityID
-            AND PP.ModifiedDate >= '2012-03-01' AND PP.ModifiedDate <= '2012-05-31'
-        )
-   )
-ORDER BY CustomerID;
-/**OUTPUT: A lot of customers who responded to their emails**/
+    c.CustomerID = 29637;
+/*OUTPUT: The customer is named Donna Carreras.
+ */
 
 
+ --MYSTER 7 
 
---Step 3
-/*Find customer who isn't present on the list from step 2*/
-SELECT DISTINCT
-    C.CustomerID,
-    P.FirstName + ' ' + P.LastName AS CustomerName
-FROM
-    Sales.Customer AS C
-JOIN
-    Person.Person AS P ON C.PersonID = P.BusinessEntityID
-WHERE
-    C.PersonID IS NOT NULL 
-    AND NOT EXISTS (
-        SELECT 1
-        FROM Person.EmailAddress AS E
-        WHERE E.BusinessEntityID = P.BusinessEntityID
-        AND E.ModifiedDate >= '2012-03-01' AND E.ModifiedDate <= '2012-05-31'
-    )
-    AND NOT EXISTS (
-        
-        SELECT 1
-        FROM Person.PersonPhone AS PP
-        WHERE PP.BusinessEntityID = P.BusinessEntityID
-        AND PP.ModifiedDate >= '2012-03-01' AND PP.ModifiedDate <= '2012-05-31'
-    )
-ORDER BY CustomerID;
-/**OUTPUT: Customers that didn't respond in April, March or May 2012. 15388 
-Or Victoria Smith is on that list!**/
+/*An internal audit revealed that a group of employees may have been issuing refunds to fake customers, so they can get the cash
+back to themselves through separate accounts..
+ The refunds were processed in THE last day of April 2014 and were all tied to orders with unusually high discount rates.
+ Find the employee responsible and the list of phony customers to void them from our system after reporting the employees.
+ */
 
---Step 4
-/*Customers who bought something past May */
-SELECT DISTINCT
-    C.CustomerID,
-    P.FirstName + ' ' + P.LastName AS CustomerName
-FROM
-    Sales.Customer AS C
-JOIN
-    Person.Person AS P ON C.PersonID = P.BusinessEntityID
-WHERE
-    C.PersonID IS NOT NULL 
-    AND C.CustomerID IN (
-        SELECT DISTINCT CustomerID
-        FROM Sales.SalesOrderHeader
-        WHERE OrderDate > '2012-05-31'
-    )
-ORDER BY
-    CustomerID;
- /**OUTPUT AND MAIN CULPRIT:Victoria Smith did infact other something around a date after the month of 
- May. This fills our checkboxes**/
-
-
-
-
---Mystery 3
-/*A employee is sabotaging us by causing delays and losing profits by consistently smuggling
-products to shipping facilities not authorized by us and is choosing cheap shipping
-territories but  using expensive shipping methods.
-They also have many high value sales despite this. How can we find this person?.*/
-
---Step 1
-/*Find the territory with lowest shipping cost*/
-
-SELECT TOP 10 st.Name AS TerritoryName,
-AVG(soh.Freight) AS AvgFreightCost
-FROM
-    Sales.SalesOrderHeader AS soh
-JOIN
-    Sales.SalesTerritory AS st ON soh.TerritoryID = st.TerritoryID
-GROUP BY
-    st.Name
-ORDER BY
-    AvgFreightCost ASC;
- /*OUTPUT: Australia, Germany, UK, France, NorthWest
- Southwest, CanADA, Southeast, Northeast, Central*/
-
-
---Step 2
-/*Find seller who has most number of orders using  most pricey shipping methods.*/
-WITH ExpensiveShippers AS (
-    SELECT TOP 5
-        ShipMethodID
-    FROM
-        Purchasing.ShipMethod
-    ORDER BY
-        ShipBase DESC
-)
+    -- Step 1: Find orders with high discount rates in April 2014 in the last day
 SELECT
-    p.FirstName + ' ' + p.LastName AS EmployeeName,
-    COUNT(soh.SalesOrderID) AS OrdersWithExpensiveShipping,
-    AVG(soh.SubTotal) AS AvgSubtotalForExpensiveOrders
+    soh.SalesOrderID,
+    soh.CustomerID,
+    soh.SalesPersonID,
+    sod.UnitPriceDiscount,
+    soh.OrderDate
 FROM
-    Sales.SalesOrderHeader AS soh
-JOIN
-    Person.Person AS p ON soh.SalesPersonID = p.BusinessEntityID
+    Sales.SalesOrderHeader soh
+JOIN Sales.SalesOrderDetail sod ON
+    soh.SalesOrderID = sod.SalesOrderID
 WHERE
-    soh.ShipMethodID IN (SELECT ShipMethodID FROM ExpensiveShippers)
-    AND soh.SalesPersonID IS NOT NULL
-GROUP BY
-    p.FirstName, p.LastName
-ORDER BY
-    OrdersWithExpensiveShipping DESC;
+    sod.UnitPriceDiscount > 0.3
+    AND soh.OrderDate BETWEEN '2014-03-30' AND '2014-03-31';
+/*OUTPUT:
+90 transactions
+ */
 
-/*Output: Jillian Carson, Michael Blythe, Tsvi Reiter, Linda Mitchell, Jae Pak
-Jose Saraiva, Shu Ito(theif from mystery 1), Garret Vargas, David Campbell, Ranjit Varkey
-Tete Mensa, Rachel Valdez, Lynn Tsoflias, Pamela Ansm, Stephen Jiang, Amy Alberts, Syed Abbas*/
-
-
---Step 3
-/*Find who has the highest average ratio of Shipping Cost (Freight) to SubTotal,
-indicating they are incurring high costs on low-value sales. */
-SELECT TOP 1
-    p.FirstName + ' ' + p.LastName AS SuspectName,
-    AVG(soh.Freight / soh.SubTotal) AS AvgCostToValueRatio
-FROM
-    Sales.SalesOrderHeader AS soh
-JOIN
-    Person.Person AS p ON soh.SalesPersonID = p.BusinessEntityID
-GROUP BY p.FirstName, p.LastName
-ORDER BY AvgCostToValueRatio DESC;
-/*Output: Lynn Tsoflias*/
-
-
---Step 4
-/*Verify our suspect with location they ship in */
+-- Step 2: Identify the employee
 SELECT
-    p.FirstName + ' ' + p.LastName AS SalespersonName,
-    st.Name AS TerritoryName
+    p.FirstName,
+    p.LastName,
+    sp.BusinessEntityID
 FROM
-    Person.Person AS p
-JOIN
-    Sales.SalesPerson AS sp ON p.BusinessEntityID = sp.BusinessEntityID
-JOIN
-    Sales.SalesTerritory AS st ON sp.TerritoryID = st.TerritoryID
+    Sales.SalesPerson sp
+JOIN Person.Person p ON
+    p.BusinessEntityID = sp.BusinessEntityID
 WHERE
-    p.FirstName = 'Lynn' AND p.LastName = 'Tsoflias';
+    sp.BusinessEntityID IN (
+        274, 275, 276, 277, 278, 279, 282, 283, 284, 288, 289, 290
+    );
 
-    /*Main output:Lynn Tsoflias ships in Australian territories or the cheapest shipping area*/
+/*OUTPUT: We found 12 employees in this scheme.
+ */
 
-
-
-
---Mystery 4
-/*An employee stole diamonds and  placed them within purchases. This was discovered in  the last week
-0f December 2013 but could've happened earlier.It is a low selling item during that month, 
-most likely for an accomplice to buy and  split the cost with the suspect. Who is that employee?
-Who is that customer?*/
-
--- Step 1: 
-/**Identify the lowest selling product by volume in the  month of december**/
-SELECT TOP 1 sod.ProductID,  p.Name AS ConcealmentProductName,
- SUM(sod.OrderQty) AS TotalQuantitySold
+-- Step 3: List the affected customers
+SELECT DISTINCT
+    p.FirstName,
+    p.LastName,
+    c.CustomerID
 FROM
-Sales.SalesOrderDetail AS sod 
-JOIN
-Sales.SalesOrderHeader AS soh ON sod.SalesOrderID = soh.SalesOrderID
-JOIN
- Production.Product AS p ON sod.ProductID = p.ProductID
-WHERE
-    soh.OrderDate >= '2013-12-01'
-    AND soh.OrderDate <= '2013-12-31'
-GROUP BY sod.ProductID, p.Name
-ORDER BY TotalQuantitySold ASC;
-/*Output is Road-650 Black, 52 with ProductID 770 and sold only once, helping us narrow thingds down*/
-
---Step 2
-/*Find employee who sold it**/
-SELECT TOP 1
-    P.FirstName + ' ' + P.LastName AS SalespersonName,
-    CAST(SOH.OrderDate AS DATE) AS SaleDate,
-    sales.SalesOrderID
-FROM Sales.SalesOrderDetail AS sales
-JOIN  Sales.SalesOrderHeader AS SOH ON sales.SalesOrderID = SOH.SalesOrderID
-JOIN Person.Person AS P ON SOH.SalesPersonID = P.BusinessEntityID
-WHERE sales.ProductID = 770
-ORDER BY SOH.OrderDate DESC;
-/*OUTPUT AND MAIN CULPRIT: Rachel Valdes sold the item in 2013-12-31*/
-
-
---Step 3
-/*Find customer associated with the sale*/
-SELECT TOP 1
-    P_Cust.FirstName + ' ' + P_Cust.LastName AS CustomerName,
-    SOH.CustomerID,
-    CAST(SOH.OrderDate AS DATE) AS SaleDate,
-    sales.ProductID
-FROM Sales.SalesOrderDetail AS sales
-JOIN Sales.SalesOrderHeader AS SOH ON sales.SalesOrderID = SOH.SalesOrderID
-JOIN Sales.Customer AS C ON SOH.CustomerID = C.CustomerID
-JOIN Person.Person AS P_Cust ON C.PersonID = P_Cust.BusinessEntityID
-WHERE sales.ProductID = 770
-ORDER BY SOH.OrderDate DESC;
-
-/*OUTPUT AND ACCOMPLICE: David Brink is our main accomplice as he bought the item on the same day*/
-
-
-
-
-
-
-
---Mystery 5
-/*An employee was victim to a phishing email. It is known that they clicked on the email on the year 2013,
-when the system has updated their email, and the email was promising a promotion, which gets us to believe
-it was low earning. 6 accounts were compromised including the original person who was sent the phising email. Who is this?*/
-
--- Step 1: 
-/** Find the date with the highest total number of contact record changes**/
-SELECT TOP 1
-    CAST(ModifiedDate AS DATE) AS BusiestUpdateDay,
-    COUNT(BusinessEntityID) AS TotalContactUpdates
-FROM
-    Person.EmailAddress
-GROUP BY
-    CAST(ModifiedDate AS DATE)
-ORDER BY
-    TotalContactUpdates DESC;
-    /*Output: 2013-07-31*/
-
--- Step 2: 
-/*Find the Top 10 Employees with the most recent contact modification dates in 2013.*/
--- Step 2: 
-/*Find the Top 10 Employees with the most recent contact modification dates in 2013.*/
-WITH UPDATED AS (
-    SELECT BusinessEntityID, ModifiedDate FROM Person.EmailAddress WHERE YEAR(ModifiedDate) = 2013
-    UNION ALL
-    SELECT BusinessEntityID, ModifiedDate FROM Person.PersonPhone WHERE YEAR(ModifiedDate) = 2013
-)
-SELECT TOP 6 P.FirstName + ' ' + P.LastName as FullName, MAX(UPDATED.ModifiedDate) AS Datelastmodified
-FROM UPDATED JOIN Person.Person AS P ON UPDATED.BusinessEntityID = P.BusinessEntityID
-JOIN HumanResources.Employee AS HRE ON P.BusinessEntityID = HRE.BusinessEntityID
-GROUP BY P.BusinessEntityID, P.FirstName, P.LastName
-ORDER BY MAX(UPDATED.ModifiedDate) DESC;
-
-/*OUTPUT: Taylor Maxwell, Barry Johnson, Jossef Goldberg, Rachel Valdez
-Lynn Tsoflias, Syed Abbas*/
-
-
--- Step 3
-/*Find lowest ranking Employee who had a recent contact modification from step 2.*/
-WITH LatestEmployeeContact AS (
-    SELECT T.BusinessEntityID, MAX(T.ModifiedDate) AS LatestDate FROM (
-        SELECT BusinessEntityID, ModifiedDate FROM Person.EmailAddress
-        UNION ALL
-        SELECT BusinessEntityID, ModifiedDate FROM Person.PersonPhone
-    ) AS T GROUP BY T.BusinessEntityID
-)
-SELECT TOP 1 
-    P.FirstName + ' ' + P.LastName AS Suspect, SP.SalesYTD, LEC.LatestDate
-FROM LatestEmployeeContact AS LEC 
-JOIN Sales.SalesPerson AS SP ON LEC.BusinessEntityID = SP.BusinessEntityID
-JOIN Person.Person AS P ON LEC.BusinessEntityID = P.BusinessEntityID
-ORDER BY  SP.SalesYTD ASC, LEC.LatestDate DESC;
-
-/*OUTPUT AND MAIN VICTIM is SYED aBBAS*/
-
-
-
-
-
-
-
-
-
-
+    Sales.Customer c
+JOIN Person.Person p ON
+    p.BusinessEntityID = c.PersonID
+WHERE EXISTS (
+    SELECT 1
+    FROM Sales.SalesOrderHeader soh
+    JOIN Sales.SalesOrderDetail sod ON soh.SalesOrderID = sod.SalesOrderID
+    WHERE soh.CustomerID = c.CustomerID
+    AND sod.UnitPriceDiscount > 0.3
+    AND soh.OrderDate BETWEEN '2014-03-30' AND '2014-03-31'
+);
+/*OUTPUT: We found 33 names which are fake customers.
+ */
