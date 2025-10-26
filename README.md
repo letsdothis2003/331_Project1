@@ -3,5 +3,20 @@ Group: 1045_4(Group 4 of the 10:45 section) Names: Fahim Tanvir, Esfar Rakin, Ju
 Course: CSCI-331 DATABASE SYSTEMS
 
 This is project 1 for CSCI 331. We provided every file we worked on, separated per person except the GANTT chart and
-TODO list(IN TIME_TRACKING_ANDMANAGEMENT, which every member each adhered to. Our leader, Fahim, helped with direction
+TODO list(IN TIME_MANAGEMENT, which every member each adhered to. Our leader, Fahim, helped with direction
 (using the chart and list along with frequent communication). 
+
+We separated each tasks into pairs:
+PAIR 1(FAHIM AND YOUSUF)
+PAIR 2(SAYANTAN AND JUSTIN)
+
+And Esfar did the project solo. 
+
+For the pairs, we solved each mystery our partner produced and collaborated using video call and SQL tools(Azure Data Studio, SQL Management Studio and Dbeaver) to create 3-4 queries to solve each one. 
+
+For walkthroughs, we uploaded each on youtube:
+PAIR 1(FAHIM AND YOUSUF):
+
+PAIR 2(SAYANTAN AND JUSTIN): 
+
+
