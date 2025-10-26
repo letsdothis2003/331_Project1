@@ -22,11 +22,14 @@ Walkthrough/Video links:
 For the pairs, we solved each mystery our partner produced and collaborated using video call and SQL tools(Azure Data Studio, SQL Management Studio and Dbeaver) to create 3-4 queries to solve each one. 
 
 For walkthroughs, we uploaded each on youtube:
+
 PAIR 1(FAHIM AND YOUSUF):
 https://www.youtube.com/watch?v=QG3Xdi-7PX0&feature=youtu.be
 
 
 PAIR 2(SAYANTAN AND JUSTIN): 
+
+INDIVIDUAL(ESFAR): 
 
 
 Each walkthrough starts with a presentation on how we contributed and committed to NAACE competancies. And then we go over eachothers mysteries.
