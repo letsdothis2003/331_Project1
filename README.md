@@ -30,7 +30,7 @@ https://www.youtube.com/watch?v=QG3Xdi-7PX0&feature=youtu.be
 PAIR 2(SAYANTAN AND JUSTIN): 
 
 INDIVIDUAL(ESFAR): 
-
+https://www.youtube.com/watch?v=qV3cWDQmQAQ
 
 Each walkthrough starts with a presentation on how we contributed and committed to NAACE competancies. And then we go over eachothers mysteries.
 We attempted to listen and adhere to the feedback presented 
