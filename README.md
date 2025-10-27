@@ -16,6 +16,9 @@ PAIR 1(FAHIM AND YOUSUF)
 PAIR 2(SAYANTAN AND JUSTIN)
 And Esfar did the project solo. 
 
+We also wanted to adhere to the feedback from previous assignments, so we tried to implemented clearly code which showcased the proper outputs when ran. 
+Also this repository is designed to be more organized to separate individual files and files used for coordination(TodoList and GAANT chart). 
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 Walkthrough/Video links:
 ------------------------------------------------------------------------------------------------------------------------------------------------------
