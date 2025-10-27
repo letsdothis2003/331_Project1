@@ -1,3 +1,6 @@
+--Esfar Rakin
+--Intro: I tested out 7 mysteries handed to me by one of the pairs(Justin and Sayantan).
+
 Use WideWorldImporters
 
 --Mystery 1 – The Overpriced Orders
@@ -157,6 +160,7 @@ JOIN Warehouse.StockItems w ON ol.StockItemID = w.StockItemID
 WHERE c.CustomerID = 90 -- same ID as Step 2
 GROUP BY w.StockItemName
 ORDER BY TimesOrdered DESC;
+
 
 
 
