@@ -6,7 +6,7 @@
 /**intro: These are 7 queries we made to root out problems(a lot go whcih is related to theft or other nefarious schemes) one might find in a company or manager role.
 Inspired by SQL NOIR**/
 
-USE AdventureWorks2022;--Its new, so I decided me and Yousuf atleast can get accostumed to it.
+USE AdventureWorks2022;--Its new, so I decided me and Fahim atleast can get accostumed to it.
 GO
   
 --MYSTERY 1
@@ -453,5 +453,6 @@ ORDER BY OneTimeOrders DESC;
 /*OUTPUT: Tsvi Reiter, Linda Mitchell, Jillian Carson, Rachel Valdez, Garrett Vargas, Michael Blythe, 
 David Campbell, Jae Pak, José Saraiva, Lynn Tsoflias, Shu Ito, Tete Mensa-Annan, Syed Abbas
 Culprit: Tsvi Reiter has the most one time customer orders. It is a significant gap compared to other employees.*/
+
 
   
